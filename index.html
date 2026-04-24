@@ -34,61 +34,6 @@
       .app-header {
         margin-bottom: 15px;
       }
-      .api-key-setup {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .api-key-input {
-        flex: 1;
-        padding: 0 10px;
-        font-size: 12px;
-        border: 2px solid #334155;
-        border-radius: 4px;
-        background-color: #0f172a;
-        color: #f1f5f9;
-        outline: none;
-      }
-      .api-key-input:focus {
-        border-color: #38bdf8;
-      }
-      .api-key-button {
-        padding: 0 15px;
-        background-color: #38bdf8;
-        color: #0f172a;
-        border: none;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-      .api-key-button:hover {
-        background-color: #0ea5e9;
-      }
-      .api-key-status {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .status-text {
-        color: #16a34a;
-        font-weight: bold;
-        font-size: 12px;
-      }
-      .clear-key-button {
-        padding: 0 10px;
-        background-color: #ef4444;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-size: 11px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-      .clear-key-button:hover {
-        background-color: #dc2626;
-      }
       .loading-indicator {
         margin-top: 8px;
         text-align: center;
@@ -1254,40 +1199,13 @@
                     }
                   ],
                   temperature: 0.1,
-                  max_tokens: 500,
-                  stream: true
+                  max_tokens: 500
                 })
               })
               
               if (response.ok) {
-                const reader = response.body.getReader()
-                const decoder = new TextDecoder()
-                let fullContent = ''
-                
-                while (true) {
-                  const { done, value } = await reader.read()
-                  if (done) break
-                  
-                  const chunk = decoder.decode(value, { stream: true })
-                  const lines = chunk.split('\n')
-                  
-                  for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                      const data = line.substring(6)
-                      if (data === '[DONE]') break
-                      
-                      try {
-                        const json = JSON.parse(data)
-                        if (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) {
-                          const contentChunk = json.choices[0].delta.content
-                          fullContent += contentChunk
-                        }
-                      } catch (e) {
-                        console.error('Error parsing chunk:', e)
-                      }
-                    }
-                  }
-                }
+                const data = await response.json()
+                const fullContent = data.choices[0].message.content
                 
                 // 提取JSON部分
                 const jsonMatch = fullContent.match(/\[\{[\s\S]*\}\]/)
@@ -1374,49 +1292,13 @@
                     }))
                   ],
                   temperature: 0.1,
-                  max_tokens: 500,
-                  stream: true
+                  max_tokens: 500
                 })
               })
               
               if (response.ok) {
-                const reader = response.body.getReader()
-                const decoder = new TextDecoder()
-                let fullContent = ''
-                
-                while (true) {
-                  const { done, value } = await reader.read()
-                  if (done) break
-                  
-                  const chunk = decoder.decode(value, { stream: true })
-                  const lines = chunk.split('\n')
-                  
-                  for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                      const data = line.substring(6)
-                      if (data === '[DONE]') break
-                      
-                      try {
-                        const json = JSON.parse(data)
-                        if (json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content) {
-                          const contentChunk = json.choices[0].delta.content
-                          fullContent += contentChunk
-                          
-                          // 更新消息内容
-                          this.chatMessages[placeholderIndex] = {
-                            ...this.chatMessages[placeholderIndex],
-                            content: fullContent
-                          }
-                          
-                          // 滚动到底部
-                          this.scrollToBottom()
-                        }
-                      } catch (e) {
-                        console.error('Error parsing chunk:', e)
-                      }
-                    }
-                  }
-                }
+                const data = await response.json()
+                const fullContent = data.choices[0].message.content
                 
                 // 提取推荐的工具名
                 // 优先从【工具列表】中提取工具名数组
@@ -1432,7 +1314,7 @@
                   recommendedTools = this.extractRecommendedTools(fullContent)
                 }
                 
-                // 完成流式输出，更新消息
+                // 完成消息更新
                 this.chatMessages[placeholderIndex] = {
                   role: 'assistant',
                   content: fullContent,
