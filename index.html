@@ -132,24 +132,6 @@
         flex: 1;
         min-width: 250px;
       }
-      .api-key-container {
-        flex-shrink: 0;
-      }
-      .api-key-input {
-        height: 32px;
-        font-size: 12px;
-        padding: 0 10px;
-      }
-      .api-key-button {
-        height: 30px;
-        font-size: 12px;
-        padding: 0 15px;
-      }
-      .clear-key-button {
-        height: 26px;
-        font-size: 11px;
-        padding: 0 10px;
-      }
       .main-content {
         display: grid;
         grid-template-columns: 3fr 1.2fr;
@@ -722,21 +704,6 @@
               <h1>AI工具箱 | 国内AI智能推荐</h1>
               <p class="subtitle">说你想做什么，我帮你选最合适的AI</p>
             </div>
-            <div class="api-key-container">
-              <div v-if="!hasApiKey" class="api-key-setup">
-                <input 
-                  v-model="userApiKey"
-                  type="password" 
-                  placeholder="输入阿里云百炼 API Key..."
-                  class="api-key-input"
-                >
-                <button @click="saveApiKey" class="api-key-button">保存</button>
-              </div>
-              <div v-else class="api-key-status">
-                <span class="status-text">已配置 ✓</span>
-                <button @click="clearApiKey" class="clear-key-button">清除</button>
-              </div>
-            </div>
           </div>
         </div>
         
@@ -898,7 +865,6 @@
         data() {
           return {
             searchQuery: '',
-            userApiKey: localStorage.getItem('zhipu_api_key') || '',
             matchedTools: null,
             isLoading: false,
             selectedCategory: '全部',
@@ -1222,9 +1188,6 @@
             }
             
             return result
-          },
-          hasApiKey() {
-            return !!localStorage.getItem('zhipu_api_key')
           }
         },
         methods: {
@@ -1245,29 +1208,17 @@
               )
             }
           },
-          saveApiKey() {
-            localStorage.setItem('zhipu_api_key', this.userApiKey)
-          },
-          clearApiKey() {
-            localStorage.removeItem('zhipu_api_key')
-            this.userApiKey = ''
-          },
           async performSearch() {
             this.isLoading = true
             try {
-              if (this.userApiKey) {
-                const recommendations = await this.fetchAIRecommendation(this.searchQuery)
-                if (recommendations && recommendations.length > 0) {
-                  // 匹配完整工具信息
-                  this.matchedTools = recommendations.map(rec => {
-                    return this.tools.find(tool => tool.name === rec.name)
-                  }).filter(Boolean)
-                } else {
-                  // 回退到本地筛选
-                  this.matchedTools = null
-                }
+              const recommendations = await this.fetchAIRecommendation(this.searchQuery)
+              if (recommendations && recommendations.length > 0) {
+                // 匹配完整工具信息
+                this.matchedTools = recommendations.map(rec => {
+                  return this.tools.find(tool => tool.name === rec.name)
+                }).filter(Boolean)
               } else {
-                // 使用本地筛选
+                // 回退到本地筛选
                 this.matchedTools = null
               }
             } catch (error) {
@@ -1279,21 +1230,15 @@
           },
           async fetchAIRecommendation(query, retryCount = 0) {
             try {
-              if (!this.userApiKey) {
-                return null
-              }
-              
               const toolsSummary = this.tools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n')
               const systemMessage = `你是一个AI工具推荐助手。根据用户的需求，从下列工具库中推荐最合适的1-3个工具。请用简洁的语言回复，推荐理由要简短。工具库：${toolsSummary}`
               
-              const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+              const response = await fetch('https://bitter-violet-156d.3419649375.workers.dev', {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.userApiKey}`
+                  'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                  model: 'qwen-turbo',
                   messages: [
                     {
                       role: 'system',
@@ -1379,16 +1324,6 @@
             // 滚动到底部
             this.scrollToBottom()
             
-            if (!this.userApiKey) {
-              // 没有API Key，显示提示
-              this.chatMessages.push({
-                role: 'assistant',
-                content: '请先配置阿里云百炼 API Key 以使用聊天功能'
-              })
-              this.scrollToBottom()
-              return
-            }
-            
             // 添加占位消息
             const placeholderIndex = this.chatMessages.length
             this.chatMessages.push({
@@ -1404,15 +1339,13 @@
             try {
               // 构建工具库摘要
               const toolsSummary = this.tools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n')
-              // 调用阿里云DashScope API
-              const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+              // 调用API
+              const response = await fetch('https://bitter-violet-156d.3419649375.workers.dev', {
                 method: 'POST',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${this.userApiKey}`
+                  'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                  model: 'qwen-turbo',
                   messages: [
                     {
                       role: 'system',
